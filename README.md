@@ -1,151 +1,211 @@
-# CV Project 2 — Gradient Domain Editing & Geometric Transformations
+# HCMUT - Xử lý ảnh số và Thị giác máy tính
 
-Bài tập lớn môn Computer Vision, gồm hai phần chính:
-- **Module 1**: Ghép ảnh trong miền gradient (Naive Copying, Laplacian Blending, Poisson Blending)
-- **Module 2**: Các phép biến đổi hình học (Affine & Projective Transformation)
-- **Module 3**: Thử nghiệm mở rộng — dán ảnh lên mặt phẳng nghiêng trong không gian
+Project minh họa các kỹ thuật **Affine Transformation**, **Projective Transformation** và **Image Blending** trong xử lý ảnh bằng OpenCV.
 
----
-
-## Cấu trúc thư mục
-
-```
-CV_Project_2/
-│
-├── Images/
-│   ├── source/          # Ảnh nguồn chứa đối tượng cần ghép (01.jpg, 02.jpg, 03.jpg)
-│   ├── mask/            # Mask xác định vùng đối tượng (01.jpg, 02.jpg, 03.jpg)
-│   ├── target/          # Ảnh nền (01.jpg, 02.jpg, 03.jpg)
-│   ├── result/          # Ảnh kết quả sau khi ghép (tự động tạo)
-│   ├── sontung.jpg      # Ảnh nguồn dùng cho module 2 & 3
-│   └── bg1.jpg          # Ảnh nền dùng cho module 3
-│
-├── module1.ipynb        # Gradient Domain Editing
-├── module2.ipynb        # Geometric Transformations
-└── module3.ipynb        # Thử nghiệm mở rộng
-```
+Các module được viết dưới dạng notebook độc lập để dễ quan sát từng bước xử lý.
 
 ---
 
-## Yêu cầu
+# Cách sử dụng
 
-```
-python >= 3.8
-numpy
-scipy
-opencv-python
-matplotlib
+Tất cả module đều sử dụng cùng một cách load ảnh.
+
+Chỉ cần chỉnh các biến sau:
+
+```python
+DATA_ROOT = "../Images/"
+IMAGE_NAME = "sontung.jpg"
+BACKGROUND_NAME = "bg1.jpg"
 ```
 
-Cài đặt nhanh:
+- `IMAGE_NAME` : ảnh nguồn (object/source image)
+- `BACKGROUND_NAME` : ảnh nền (background image)
+
+
+Để chạy với ảnh khác, chỉ cần thay đổi:
+
+```python
+IMAGE_NAME = "your_image.jpg"
+BACKGROUND_NAME = "your_background.jpg"
+```
+## 1. Clone repository
+
+Sử dụng git để tải project về máy:
 
 ```bash
-pip install numpy scipy opencv-python matplotlib
+git clone https://github.com/CaPPok/CV_Project_2.git
+```
+
+Di chuyển vào thư mục project:
+
+```bash
+cd CV_Project_2
 ```
 
 ---
 
-## Hướng dẫn sử dụng
+## 2. Tạo môi trường Python
 
-### Module 1 — Gradient Domain Editing (`module1.ipynb`)
+Tạo virtual environment:
+
+```bash
+python -m venv venv
+```
+
+Kích hoạt môi trường:
+
+### Windows
+```bash
+venv\Scripts\activate
+```
+
+### Linux / MacOS
+```bash
+source venv/bin/activate
+```
+
+---
+
+## 3. Cài đặt các thư viện cần thiết
+
+Cài đặt các thư viện sử dụng trong project:
+
+```bash
+pip install opencv-python numpy matplotlib scipy
+```
+
+Các thư viện chính:
+
+- `opencv-python` – xử lý ảnh
+- `numpy` – tính toán ma trận
+- `matplotlib` – hiển thị ảnh
+- `scipy` – hỗ trợ một số phép toán số
+
+---
+
+## 4. Cấu trúc thư mục
+
+```
+project/
+│
+├── SourceCode/
+│   ├── module1.ipynb
+│   ├── module2.ipynb
+│   └── module3.ipynb
+│
+└── Images/
+    ├── sontung.jpg
+    ├── bg1.jpg
+    └── ...
+```
+
+Tất cả ảnh cần đặt trong thư mục `Images`.
+
+---
+
+# Module 1 – Gradient Domain Editing
+
+Module này minh họa và so sánh nhiều kỹ thuật **gradient domain editing** để ghép một ảnh source vào background một cách tự nhiên.  
+Các phương pháp blending được triển khai gồm:
+
+- Naive Blending
+- Poisson Blending
+- Mixed Gradient Blending
+- Laplacian Pyramid Blending
 
 Mở notebook và chỉnh các tham số ở **cell cuối cùng** trước khi chạy:
 
 ```python
-DATA_ROOT    = 'đường/dẫn/đến/Images/'   # Đường dẫn tới thư mục Images
-IMAGE_NAME   = "01.jpg"                   # Tên file ảnh (01.jpg / 02.jpg / 03.jpg)
-BLEND_TYPE   = 2                          # 0: Naive | 1: Laplacian | 2: Poisson
-GRAD_MIX     = False                      # True: dùng gradient mixing (chỉ có tác dụng khi BLEND_TYPE=2)
-NUM_LV       = 3                          # Số levels pyramid (chỉ có tác dụng khi BLEND_TYPE=1)
-USE_MANUAL_OFFSET = True                  # True: chọn vị trí thủ công | False: dùng target_configs
+DATA_ROOT = '../Images/'      # Đường dẫn đến thư mục Images
+IMAGE_NAME = "01.jpg"         # Tên file ảnh (01.jpg / 02.jpg / 03.jpg)
+
+BLEND_TYPE = 2                # 0: Naive | 1: Laplacian | 2: Poisson
+GRAD_MIX = False              # True: dùng gradient mixing (chỉ tác dụng khi BLEND_TYPE=2)
+
+NUM_LV = 3                    # Số levels pyramid (chỉ tác dụng khi BLEND_TYPE=1)
+
+USE_MANUAL_OFFSET = True      # True: chọn vị trí thủ công | False: dùng target_configs
 ```
 
-**Khi `USE_MANUAL_OFFSET = True`**, một cửa sổ OpenCV sẽ mở ra:
+---
+
+### Chọn vị trí thủ công
+Khi `USE_MANUAL_OFFSET = True`, một cửa sổ OpenCV sẽ mở ra.
 
 | Thao tác | Tác dụng |
-|---|---|
+|--------|--------|
 | Di chuột / Click trái | Chọn vị trí đặt source lên target |
 | Scroll lên / phím `+` | Phóng to source (+5% mỗi bước) |
-| Scroll xuống / phím `-` | Thu nhỏ source (−5% mỗi bước) |
+| Scroll xuống / phím `-` | Thu nhỏ source (-5% mỗi bước) |
 | `Enter` | Xác nhận và tiếp tục |
 
-**Khi `USE_MANUAL_OFFSET = False`**, chỉnh bảng `target_offsets`:
+---
+
+### Cấu hình vị trí tự động
+
+Khi `USE_MANUAL_OFFSET = False`, chỉnh vị trí trong `target_configs`:
 
 ```python
-target_offsets = [[200, 21, 1.0], [-300, -100, 1.0], [-150, 10, 1.0]]
+target_configs = {
+    "01.jpg": [H0, W0, scale],   # H0, W0: offset góc trên-trái; scale: tỉ lệ resize
+    "02.jpg": [H0, W0, scale],
+    "03.jpg": [H0, W0, scale],
+}
 ```
-# H0, W0: offset góc trên-trái; scale: tỉ lệ resize
-Kết quả được lưu tự động vào `Images/result/`.
 
 ---
 
-### Module 2 — Geometric Transformations (`module2.ipynb`)
+### Kết quả
 
-Chỉnh đường dẫn ảnh ở **cell đầu tiên**:
+Kết quả được **lưu tự động** vào thư mục:
+
+```
+Images/result/
+```
+
+# Module 2 – Biến đổi hình học (Transformation)
+
+Module này minh họa các phép **biến đổi hình học cơ bản** trong xử lý ảnh:
+
+- **Affine Transformation**
+- **Projective Transformation (Homography)**
+
+Các phép biến đổi được áp dụng để thay đổi vị trí, góc nhìn và hình dạng của ảnh.
+
+### Nội dung chính
+
+- Thực hiện các phép biến đổi affine (rotation, scaling, shearing, translation).
+- Thực hiện projective transformation để mô phỏng thay đổi phối cảnh.
+- Quan sát sự khác nhau giữa affine và projective transformation.
+
+### Chạy với ảnh khác
+
+Chỉ cần thay đổi:
 
 ```python
-img_path = "đường/dẫn/đến/sontung.jpg"
+IMAGE_NAME = "new_image.jpg"
 ```
-
-Notebook thực hiện lần lượt các phép biến đổi sau với các tham số mặc định:
-
-| Cell | Phép biến đổi | Tham số mặc định |
-|---|---|---|
-| Translation | Tịnh tiến | `tx=50, ty=50` |
-| Rotation | Quay | `θ=15°` |
-| Scaling | Co giãn | `sx=0.5, sy=0.5` |
-| Shearing | Kéo xiên | `θx=70°, θy=85°` |
-| Rotation + Translation | Kết hợp | `θ=15°, tx=50, ty=50` |
-| Scaling + Translation | Kết hợp | `sx=0.5, sy=0.8, tx=100, ty=30` |
-| Rotation + Scaling | Kết hợp | `θ=15°, sx=0.8, sy=0.8` |
-| Shearing + Translation | Kết hợp | `θx=70°, θy=85°, tx=20, ty=30` |
-| 4 phép đồng thời | Kết hợp | `θ=30°, sx=1.2, sy=0.8, θx=70°, θy=85°, tx=40, ty=30` |
-| Affine từ điểm tương ứng | `cv2.getAffineTransform` | 3 cặp điểm cố định |
-| Projective | `cv2.getPerspectiveTransform` | 4 cặp điểm cố định |
 
 ---
 
-### Module 3 — Thử nghiệm mở rộng (`module3.ipynb`)
+# Module 3 – Thử nghiệm mở rộng
 
-Chỉnh đường dẫn ảnh ở **cell đầu tiên**:
+Module này áp dụng **Projective Transformation (Homography)** để đặt một ảnh source lên một mặt phẳng bất kỳ trong ảnh background.
+
+### Quy trình chính
+
+1. Load ảnh source và background.
+2. Chọn các điểm tương ứng bằng cách click chuột trên background.
+3. Tính ma trận **homography**.
+4. Warp ảnh source để phù hợp với phối cảnh của background.
+
+Sau đó ảnh source sẽ được **biến dạng theo phối cảnh và đặt đúng vị trí trên ảnh nền**.
+
+### Chạy với ảnh khác
+
+Chỉ cần thay đổi:
 
 ```python
-bg_path  = "đường/dẫn/đến/bg1.jpg"       # Ảnh nền
-src_path = "đường/dẫn/đến/sontung.jpg"   # Ảnh nguồn cần dán lên nền
+IMAGE_NAME = "new_source.jpg"
+BACKGROUND_NAME = "new_background.jpg"
 ```
-
-Chạy các cell theo thứ tự. Khi đến **cell chọn điểm neo**, một cửa sổ OpenCV sẽ mở:
-
-1. **Click chuột 4 lần** lên ảnh nền để chọn 4 điểm neo theo thứ tự: trên-trái → trên-phải → dưới-phải → dưới-trái (hoặc bất kỳ thứ tự nhất quán nào).
-2. Nhấn bất kỳ phím nào để đóng cửa sổ và tiếp tục.
-
-Pipeline sau đó tự động tính Homography, warp ảnh nguồn vào vùng đã chọn và blend vào ảnh nền.
-
----
-
-## Các phương pháp blend (Module 1)
-
-| `BLEND_TYPE` | Phương pháp | Đặc điểm |
-|---|---|---|
-| `0` | Naive Copying | Nhanh, nhưng tạo viền cứng tại biên |
-| `1` | Laplacian Blending | Biên mượt hơn nhờ blend đa tần số, nhưng không xử lý được chênh lệch màu lớn |
-| `2` | Poisson Blending | Chất lượng tốt nhất, tự điều chỉnh màu theo điều kiện biên của ảnh nền |
-
-Với `BLEND_TYPE=2`:
-- `GRAD_MIX=False` (khuyến nghị): guidance field lấy hoàn toàn từ gradient source
-- `GRAD_MIX=True`: guidance field lấy gradient lớn hơn giữa source và target — phù hợp khi ghép vật thể trong suốt, **không khuyến nghị** khi ảnh nền có texture mạnh hơn đối tượng
-
----
-
-## Lưu ý
-
-- Thư mục `Images/result/` cần tồn tại trước khi chạy module 1, hoặc tạo thủ công:
-  ```bash
-  mkdir Images/result
-  ```
-- Đường dẫn trong code dùng dấu `\\` (Windows). Nếu dùng Linux/macOS, thay bằng `/`:
-  ```python
-  DATA_ROOT = '/đường/dẫn/đến/Images/'
-  source = cv2.imread(DATA_ROOT + "source/" + image_name)
-  ```
-- Module 1 yêu cầu 3 file ảnh có **cùng tên** trong cả 3 thư mục `source/`, `mask/`, `target/`.
