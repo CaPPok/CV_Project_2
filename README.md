@@ -69,16 +69,12 @@ USE_MANUAL_OFFSET = True                  # True: chọn vị trí thủ công |
 | Scroll xuống / phím `-` | Thu nhỏ source (−5% mỗi bước) |
 | `Enter` | Xác nhận và tiếp tục |
 
-**Khi `USE_MANUAL_OFFSET = False`**, chỉnh bảng `target_configs` trong cell đó:
+**Khi `USE_MANUAL_OFFSET = False`**, chỉnh bảng `target_offsets`:
 
 ```python
-target_configs = {
-    "01.jpg": [H0, W0, scale],   # H0, W0: offset góc trên-trái; scale: tỉ lệ resize
-    "02.jpg": [H0, W0, scale],
-    "03.jpg": [H0, W0, scale],
-}
+target_offsets = [[200, 21, 1.0], [-300, -100, 1.0], [-150, 10, 1.0]]
 ```
-
+# H0, W0: offset góc trên-trái; scale: tỉ lệ resize
 Kết quả được lưu tự động vào `Images/result/`.
 
 ---
