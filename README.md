@@ -143,14 +143,11 @@ Khi `USE_MANUAL_OFFSET = True`, một cửa sổ OpenCV sẽ mở ra.
 
 ### Cấu hình vị trí tự động
 
-Khi `USE_MANUAL_OFFSET = False`, chỉnh vị trí trong `target_configs`:
+Khi `USE_MANUAL_OFFSET = False`, chỉnh vị trí trong `target_offsets`:
 
 ```python
-target_configs = {
-    "01.jpg": [H0, W0, scale],   # H0, W0: offset góc trên-trái; scale: tỉ lệ resize
-    "02.jpg": [H0, W0, scale],
-    "03.jpg": [H0, W0, scale],
-}
+target_offsets = [[200, 21, 1.0], [-300, -100, 1.0], [-150, 10, 1.0]]
+# H0, W0: offset góc trên-trái; scale: tỉ lệ resize
 ```
 
 ---
